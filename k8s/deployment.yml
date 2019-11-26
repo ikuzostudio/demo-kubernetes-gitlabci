@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: _APP_NAME_
+  labels:
+    app: _APP_NAME_
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: _APP_NAME_
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 33%
+  template:
+    metadata:
+      labels:
+        app: _APP_NAME_
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry
+      containers:
+        - name: _APP_NAME_
+          image: registry.gitlab.com/ikuzo/_APP_NAME_:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: FOO
+              value: bar

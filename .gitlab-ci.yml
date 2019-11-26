@@ -1,0 +1,41 @@
+image: docker:latest
+services:
+  - docker:dind
+
+stages:
+  - build
+  - deploy
+
+variables:
+
+build-dev:
+  stage: build
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker build --pull -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
+  only:
+    - develop
+
+deploy-dev:
+  stage: deploy
+  image: alpine
+  environment:
+    name: staging
+  script:
+    - mkdir $HOME/.kube
+    - cp $KUBECONFIG $HOME/.kube/config
+    - cat $HOME/.kube/config
+    - apk update  && apk add --no-cache curl
+    - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    - chmod +x ./kubectl && mv ./kubectl /usr/local/bin/kubectl
+    - kubectl config set-context $(kubectl config current-context)
+    - 'printf "apiVersion: v1\nkind: Secret\n$(kubectl create secret docker-registry gitlab-registry --docker-server=$CI_REGISTRY --docker-username=$GITLAB_REGISTRY_USER --docker-password=$GITLAB_REGISTRY_TOKEN --docker-email=$GITLAB_USER_EMAIL --docker-email=GITLAB_REGISTRY_EMAIL -o yaml --dry-run)" | kubectl apply -f -'
+    - sed -i 's/_APP_NAME_/'"$CI_PROJECT_NAME"'/g; s/_VERSION_/'"$CI_COMMIT_SHA"'/g' k8s/deployment.yaml;
+    - sed -i 's/_APP_NAME_/'"$CI_PROJECT_NAME"'/g; s/_VERSION_/'"$CI_COMMIT_SHA"'/g' k8s/ingress.yaml;
+    - sed -i 's/_APP_NAME_/'"$CI_PROJECT_NAME"'/g; s/_VERSION_/'"$CI_COMMIT_SHA"'/g' k8s/service.yaml;
+    - kubectl apply -f k8s/deployment.yaml
+    - kubectl apply -f k8s/service.yaml
+    - kubectl apply -f k8s/ingress.yaml
+  only:
+    - develop

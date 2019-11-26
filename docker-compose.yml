@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+  web:
+    image: thecodingmachine/php:7.3-v2-apache
+    ports:
+      - 8000:80 
+    environment:
+      APACHE_DOCUMENT_ROOT: public/
+      TZ: Europe/Paris
+      PHP_INI_DATE__TIMEZONE: Europe/Paris
+    volumes:
+      - ./:/var/www/html

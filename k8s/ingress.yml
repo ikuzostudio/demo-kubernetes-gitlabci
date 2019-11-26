@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: _APP_NAME_
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "true"
+    kubernetes.io/tls-acme: "true"
+    certmanager.k8s.io/clusterissuer: letsencrypt-prod
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+  - hosts:
+    - _APP_NAME_.ikuzo-studio.fr
+    secretName: _APP_NAME_-letsencrypt
+  rules:
+  - host: _APP_NAME_.ikuzo-studio.fr
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: _APP_NAME_
+          servicePort: 80
